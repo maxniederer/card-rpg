@@ -2,9 +2,11 @@ use sdl2::Sdl;
 use sdl2::video::WindowContext;
 use sdl2::render::{TextureCreator, WindowCanvas};
 use sdl2::ttf::Sdl2TtfContext;
+use sdl2::AudioSubsystem;
 
 use crate::video::gfx::CAM_W;
 use crate::video::gfx::CAM_H;
+use crate::video::sfx::*;
 
 const TITLE: &str = "CarrrrrrrrrrrrdRPG!";
 //const WINDOW_HEIGHT: u32 = 720;
@@ -15,6 +17,7 @@ pub struct SDLCore {
 	pub wincan: WindowCanvas,
 	pub texture_creator: TextureCreator<WindowContext>,
 	pub font_context: Sdl2TtfContext,
+	pub audio_subsystem: AudioSubsystem,
 }
 
 impl SDLCore {
@@ -22,6 +25,8 @@ impl SDLCore {
 	pub fn init() -> Result<Self, String> {
 		let sdl_context = sdl2::init()?;
 		let video_subsystem = sdl_context.video()?;
+
+		let audio_subsystem = sdl_context.audio().unwrap();
 
 		let window = video_subsystem.window(TITLE, CAM_W, CAM_H)
 			.build()
@@ -34,7 +39,7 @@ impl SDLCore {
 			.map_err(|e| e.to_string())?;
 
 		let texture_creator = wincan.texture_creator();
-		
+
 		let font_context = sdl2::ttf::init().map_err(|e| e.to_string())?;
 
 		Ok(SDLCore {
@@ -42,6 +47,7 @@ impl SDLCore {
 			wincan,
 			texture_creator,
 			font_context,
+			audio_subsystem,
 		})
 	}
 }

@@ -1,7 +1,11 @@
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
 use std::collections::HashMap;
 use std::time::{Instant, Duration};
+use std::thread;//for music
+use std::thread::Thread;//for music
 
 use sdl2::Sdl;
 use sdl2::image::LoadTexture;
@@ -17,6 +21,7 @@ use crate::scenes::credits::Credits;
 use crate::cards::battle_system;
 
 use crate::events::event_subsystem::{EventSystem, GameEvent};
+use crate::video::sfx::{audio_subsystem};
 
 pub enum GameState {
 	Running,
@@ -33,6 +38,8 @@ pub struct GameManager<'a> {
 	event_system: Rc<RefCell<EventSystem>>,
 	font_manager: Rc<RefCell<FontManager<'a>>>,
 	curr_scene: u32,
+	audio_system: Rc<RefCell<audio_subsystem>>,
+	music_player: Thread,
 }
 
 impl<'a> GameManager<'a> {
@@ -91,15 +98,18 @@ impl<'a> GameManager<'a> {
 		}
 	}
 
-	pub fn init(sdl_context: &Sdl, wincan: Rc<RefCell<WindowCanvas>>, texture_manager: Rc<RefCell<TextureManager<'a>>>, font_manager: Rc<RefCell<FontManager<'a>>>) -> Result<Self, String> {
+	pub fn init(sdl_context: &Sdl, wincan: Rc<RefCell<WindowCanvas>>, texture_manager: Rc<RefCell<TextureManager<'a>>>, font_manager: Rc<RefCell<FontManager<'a>>>,audio_system:Arc<audio_subsystem>) -> Result<Self, String> {
 
 		let event_system = Rc::new(RefCell::new(EventSystem::init(&sdl_context)?));
+		let music_player = thread::Builder::new().spawn(move ||{
+			Arc::try_unwrap(audio_system).unwrap().playsong("assets/BATTLE.wav");
+		});
+
 
 		let menu = Box::new(Menu::init(Rc::clone(&texture_manager), Rc::clone(&wincan), Rc::clone(&event_system), Rc::clone(&font_manager))?);
 		let battle = Box::new(Battle::init(Rc::clone(&texture_manager), Rc::clone(&wincan), Rc::clone(&event_system), Rc::clone(&font_manager))?);
 		let overworld = Box::new(Overworld::init(Rc::clone(&texture_manager), Rc::clone(&wincan), Rc::clone(&event_system))?);
 		let credits = Box::new(Credits::init(Rc::clone(&texture_manager), Rc::clone(&wincan), Rc::clone(&event_system))?);
-
 		Ok(GameManager {
 			overworld,
 			battle,
@@ -110,9 +120,11 @@ impl<'a> GameManager<'a> {
 			event_system,
 			font_manager,
 			curr_scene: 0,
+			audio_system,
+			music_player,
 		})
 	}
-	
+
 }
 
 
